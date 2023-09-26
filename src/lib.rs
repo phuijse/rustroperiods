@@ -47,9 +47,9 @@ pub fn periodogram(lc: &LightCurve, printit: bool) {
 
         let mut string_length: f64 = 0.0;
         for i in 1..lc.mag.len() {
-            string_length += (&lc.mag[folded_indices[i]]-&lc.mag[folded_indices[i-1]]).powi(2);
+            string_length += (lc.mag[folded_indices[i]]-lc.mag[folded_indices[i-1]]).powi(2);
         }
-        string_length = string_length/(2.0*n_samples*mag_variance);
+        string_length /= 2.0*n_samples*mag_variance;
         if printit {
             println!("{trial_frequency},{string_length}");
         }

@@ -1,6 +1,6 @@
+use crate::lightcurve::LightCurve;
 use crate::sorting::{argsort, find_peaks};
 use crate::stats::variance;
-use crate::LightCurve;
 
 /// Performs the epoch folding transformation
 /// phase = modulo(time, period)/period
@@ -9,11 +9,11 @@ fn fold(times: &[f64], period: f64) -> Vec<f64> {
     times.iter().map(|time| (time % period) / period).collect()
 }
 
-pub fn string_length(lc: &LightCurve, fmin: f64, fstep: f64) {
+pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) {
     let n_samples = lc.mag.len() as f64;
     let mag_variance = variance(&lc.mag);
-
-    for k in 0..1_000_000 {
+    let nsteps = ((fmax - fmin) / fstep) as i32;
+    for k in 0..nsteps {
         let trial_frequency = f64::from(k).mul_add(fstep, fmin);
         let phase = fold(&lc.mjd, trial_frequency.powi(-1));
         let folded_indices: Vec<usize> = argsort(&phase);

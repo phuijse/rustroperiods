@@ -1,12 +1,7 @@
+mod lightcurve;
 pub mod periodograms;
 pub mod sorting;
 pub mod stats;
-
-pub struct LightCurve {
-    mjd: Vec<f64>,
-    mag: Vec<f64>,
-    err: Vec<f64>,
-}
 
 pub enum Periodogram {
     StringLength,
@@ -15,9 +10,9 @@ pub enum Periodogram {
     MHAOV,
 }
 
-pub fn single_band_periodogram(lc: &LightCurve, method: Periodogram) {
+pub fn single_band_periodogram(lc: &lightcurve::LightCurve, method: Periodogram) {
     match method {
-        Periodogram::StringLength => periodograms::string_length(lc, 1e-3, 1e-5),
+        Periodogram::StringLength => periodograms::string_length(lc, 1e-3, 3.0, 1e-5),
         _ => (),
     }
 }

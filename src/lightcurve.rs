@@ -1,5 +1,5 @@
 use rand::{distributions::Uniform, Rng};
-use rand_distr::{Distribution, Normal, StandardNormal};
+use rand_distr::{Distribution, Normal};
 
 pub struct LightCurve {
     pub mjd: Vec<f64>,

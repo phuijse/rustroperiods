@@ -1,6 +1,6 @@
 use criterion::*;
 use rustroperiods::lightcurve::LightCurve;
-use rustroperiods::periodograms::string_length;
+use rustroperiods::periodograms::sweep_frequency_grid;
 
 pub fn periodogram_benchmark(c: &mut Criterion) {
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
@@ -11,7 +11,7 @@ pub fn periodogram_benchmark(c: &mut Criterion) {
     for n in [10, 20, 50, 100, 200, 500, 1000].iter() {
         let lc = LightCurve::random(*n as usize);
         group.bench_with_input(BenchmarkId::from_parameter(n), n, |b, &n| {
-            b.iter(|| string_length(black_box(&lc), 1e-3, 3.0, 1e-4))
+            b.iter(|| sweep_frequency_grid(black_box(&lc), 1e-3, 3.0, 1e-4))
         });
     }
     group.finish();

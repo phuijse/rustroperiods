@@ -24,10 +24,8 @@ fn fold(times: &[f64], period: f64) -> Vec<f64> {
 /// Reference: <https://ui.adsabs.harvard.edu/abs/2002A%26A...386..763C/abstract>
 ///
 pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -> Vec<f64> {
-    let n_samples = lc.mag.len() as f64;
-    let mag_variance = stats::sample_variance(&lc.mag, true);
     let nsteps = ((fmax - fmin) / fstep) as i32;
-    let denominator = 2.0 * n_samples * mag_variance;
+    let statistic = LaflerKinmanStringLength::new(lc);
     let mut periodogram: Vec<f64> = Vec::with_capacity(nsteps as usize);
     //let mut times: Vec<f64> = Vec::with_capacity(nsteps as usize);
     for k in 0..nsteps {
@@ -42,20 +40,30 @@ pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -> Vec<f
             .collect::<Vec<f64>>();
         //times.push((end - start).as_secs_f64());
 
-        //let mut string_length: f64 = 0.0;
-        //for i in 1..folded_magnitude.len() {
-        //    string_length += (folded_magnitude[i] - folded_magnitude[i - 1]).powi(2);
-        //}
-        periodogram.push(lafler_kinman_statistic(&folded_magnitude) / denominator);
+        periodogram.push(statistic.compute(&folded_magnitude));
     }
     //println!("{}", times.iter().sum::<f64>());
     periodogram
 }
 
-#[inline(always)]
-fn lafler_kinman_statistic(folded_magnitude: &[f64]) -> f64 {
-    folded_magnitude
-        .windows(2)
-        .map(|w| (w[0] - w[1]).powi(2))
-        .sum::<f64>()
+struct LaflerKinmanStringLength {
+    normalizing_constant: f64,
+}
+
+impl LaflerKinmanStringLength {
+    fn new(lc: &LightCurve) -> Self {
+        let n_samples = lc.mag.len() as f64;
+        let mag_variance = stats::sample_variance(&lc.mag, true);
+        Self {
+            normalizing_constant: 2.0 * n_samples * mag_variance,
+        }
+    }
+    #[inline(always)]
+    fn compute(&self, folded_magnitude: &[f64]) -> f64 {
+        folded_magnitude
+            .windows(2)
+            .map(|w| (w[0] - w[1]).powi(2))
+            .sum::<f64>()
+            / self.normalizing_constant
+    }
 }

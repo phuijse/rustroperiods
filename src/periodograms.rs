@@ -1,6 +1,8 @@
+//! This module contains implementations of periodograms for irregularly-sampled time series
+
 use crate::lightcurve::LightCurve;
-//use crate::sorting::argsort;
-use crate::stats::variance;
+use crate::sorting::argsort;
+use crate::stats;
 //use std::time::Instant;
 
 /// Performs the epoch folding transformation
@@ -14,15 +16,16 @@ fn fold(times: &[f64], period: f64) -> Vec<f64> {
         .collect()
 }
 
-fn argsort2(data: &[f64]) -> Vec<usize> {
-    let mut indices = (0..data.len()).collect::<Vec<_>>();
-    indices.sort_unstable_by(|&i, &j| data[i].total_cmp(&data[j]));
-    indices
-}
-
+/// Computes the String Length Lafler-Kinman (SLLK) statistic of a `lc` over a linearly-spaced
+/// range of frequencies starting in `fmin`, ending in `fmax` and separated by `fstep`.
+///
+/// The SLLK statistic corresponde to Eq. 9 in David Clarke, "String/Rope length methods using the
+/// Lafler-Kinman statistic", Astronomy & Astrophysics, vol. 386, n. 2, pp. 763-774, 2002.
+/// Reference: <https://ui.adsabs.harvard.edu/abs/2002A%26A...386..763C/abstract>
+///
 pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -> Vec<f64> {
     let n_samples = lc.mag.len() as f64;
-    let mag_variance = variance(&lc.mag);
+    let mag_variance = stats::sample_variance(&lc.mag, true);
     let nsteps = ((fmax - fmin) / fstep) as i32;
     let denominator = 2.0 * n_samples * mag_variance;
     let mut periodogram: Vec<f64> = Vec::with_capacity(nsteps as usize);
@@ -31,7 +34,7 @@ pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -> Vec<f
         let trial_frequency = f64::from(k).mul_add(fstep, fmin);
         let phase = fold(&lc.mjd, trial_frequency.powi(-1));
         //let start = Instant::now();
-        let folded_indices: Vec<usize> = argsort2(&phase);
+        let folded_indices: Vec<usize> = argsort(&phase);
         //let end = Instant::now();
         let folded_magnitude = folded_indices
             .into_iter()
@@ -43,12 +46,16 @@ pub fn string_length(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -> Vec<f
         //for i in 1..folded_magnitude.len() {
         //    string_length += (folded_magnitude[i] - folded_magnitude[i - 1]).powi(2);
         //}
-        let string_length = folded_magnitude
-            .windows(2)
-            .map(|w| (w[0] - w[1]).powi(2))
-            .sum::<f64>();
-        periodogram.push(string_length / denominator);
+        periodogram.push(lafler_kinman_statistic(&folded_magnitude) / denominator);
     }
     //println!("{}", times.iter().sum::<f64>());
     periodogram
+}
+
+#[inline(always)]
+fn lafler_kinman_statistic(folded_magnitude: &[f64]) -> f64 {
+    folded_magnitude
+        .windows(2)
+        .map(|w| (w[0] - w[1]).powi(2))
+        .sum::<f64>()
 }

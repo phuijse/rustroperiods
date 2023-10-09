@@ -3,7 +3,6 @@
 use crate::lightcurve::LightCurve;
 use crate::sorting::argsort;
 use crate::stats;
-use std::time::Instant;
 
 /// Performs the epoch folding transformation
 /// phase = modulo(time, period)/period
@@ -22,12 +21,10 @@ pub fn sweep_frequency_grid(lc: &LightCurve, fmin: f64, fmax: f64, fstep: f64) -
     let nsteps = ((fmax - fmin) / fstep) as i32;
     let statistic = LaflerKinmanStringLength::new(lc);
     let mut periodogram: Vec<f64> = Vec::with_capacity(nsteps as usize);
-    let start = Instant::now();
     for k in 0..nsteps {
         let trial_frequency = f64::from(k).mul_add(fstep, fmin);
         periodogram.push(statistic.compute(trial_frequency));
     }
-    println!("{}", (Instant::now() - start).as_secs_f64());
     periodogram
 }
 

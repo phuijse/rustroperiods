@@ -19,14 +19,30 @@ pub mod lightcurve;
 pub mod periodograms;
 pub mod sorting;
 pub mod stats;
+//use numpy::{IntoPyArray, PyArray2, PyReadonlyArray2};
+use pyo3::prelude::*;
 
 pub enum Periodogram {
     StringLength,
 }
 
+#[pyfunction]
+#[pyo3(name = "single_band_periodogram")]
+fn single_band_periodogram_py(mjd: Vec<f64>, mag: Vec<f64>, err: Vec<f64>) -> PyResult<Vec<f64>> {
+    let lc = lightcurve::LightCurve { mjd, mag, err };
+    let val = single_band_periodogram(&lc, Periodogram::StringLength);
+    Ok(val)
+}
+
+#[pymodule]
+fn rustroperiods(_py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(single_band_periodogram_py, m)?)?;
+    Ok(())
+}
+
 pub fn single_band_periodogram(lc: &lightcurve::LightCurve, method: Periodogram) -> Vec<f64> {
     match method {
-        Periodogram::StringLength => periodograms::string_length(lc, 1e-3, 3.0, 1e-5),
+        Periodogram::StringLength => periodograms::sweep_frequency_grid(lc, 1e-3, 3.0, 1e-4),
     }
 }
 

@@ -41,19 +41,21 @@ fn rustroperiods(_py: Python, m: &PyModule) -> PyResult<()> {
 }
 
 pub fn single_band_periodogram(lc: &lightcurve::LightCurve, method: Periodogram) -> Vec<f64> {
-    match method {
-        Periodogram::StringLength => periodograms::sweep_frequency_grid(lc, 1e-3, 3.0, 1e-4),
-    }
+    let statistic = match method {
+        Periodogram::StringLength => periodograms::lafler_kinman_string_length(&lc),
+    };
+    periodograms::sweep_frequency_grid(statistic, 1e-3, 3.0, 1e-4)
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::stats::average;
-//
-//     #[test]
-//     fn it_works() {
-//         let example = vec![1.0, 2.0, 3.0];
-//         let result = average(&example);
-//         assert_eq!(result, 2.0);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use crate::lightcurve::LightCurve;
+    use crate::{single_band_periodogram, Periodogram};
+
+    #[test]
+    fn it_works() {
+        let lc = LightCurve::noisy_sinewave(1000, 100.0, 10.0, 0.2);
+        single_band_periodogram(&lc, Periodogram::StringLength);
+        assert_eq!(false, true);
+    }
+}
